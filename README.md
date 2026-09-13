@@ -33,7 +33,9 @@ list and what's next.
    ```
 
 2. Copy `.env.example` to `.env` and fill in your Supabase project's URL
-   and anon/public key (Supabase dashboard → Project Settings → API):
+   and publishable key (Supabase dashboard → Project Settings → API →
+   Connect, or the API Keys page — this is the client-safe key, previously
+   called the "anon" key):
 
    ```
    cp .env.example .env
