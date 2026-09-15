@@ -27,3 +27,12 @@ export interface VitalsData {
 export type VitalsEntry = EntryRow<VitalsData>
 
 export type VitalsField = Exclude<keyof VitalsData, 'date'>
+
+export type MedicationSlot = 'AM' | 'PM' | 'Bedtime'
+
+export interface MedicationData {
+  date: string // YYYY-MM-DD, the calendar day this dose belongs to
+  slot: MedicationSlot
+}
+
+export type MedicationEntry = EntryRow<MedicationData>

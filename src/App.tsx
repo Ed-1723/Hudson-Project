@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DateNav } from './components/DateNav'
+import { MedicationTracker } from './components/MedicationTracker'
 import { UserSwitcher } from './components/UserSwitcher'
 import { VitalsForm } from './components/VitalsForm'
 import { todayKey } from './lib/dateUtils'
@@ -60,6 +61,9 @@ function App() {
       <DateNav dateKey={dateKey} onChange={setDateKey} />
 
       <main>
+        <h2 className="section-title">Medications</h2>
+        <MedicationTracker userId={currentUserId} dateKey={dateKey} />
+
         <h2 className="section-title">Vitals</h2>
         <VitalsForm userId={currentUserId} dateKey={dateKey} />
       </main>
