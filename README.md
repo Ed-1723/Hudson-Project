@@ -11,13 +11,18 @@ shared data layer, not a one-off.
 
 ## Status
 
-First slice: the **vitals form** (steps, water, weight, blood pressure,
-pulse) reading from and writing to Supabase, with per-day date navigation.
-This proves the pipeline end to end. Everything else in the original
-artifact (medication tracker, food logging via LLM lookup, favorites,
-daily readout, exports, multi-user scorecard) is not ported yet — see
-`docs/roadmap.md`-style notes in the project handoff for the full feature
-list and what's next.
+Ported so far, all reading from and writing to Supabase with per-day date
+navigation:
+
+- **Vitals** — steps, water, weight, blood pressure, pulse.
+- **Medications** — AM/PM/Bedtime taps, with manual time correction for
+  backfilling.
+- **Food log** — free-text description → Claude (with web search) estimates
+  calories/protein/carbs/fat/sodium, with a confidence level and source
+  note; compound entries sum their components.
+
+Not yet ported: favorites, the daily readout view, exports (doctor report /
+backup JSON), and the multi-user household scorecard.
 
 ## Stack
 
@@ -51,6 +56,44 @@ The `users` table must already have at least one row (see schema below) —
 the app loads the user list on startup and lets you switch between them
 with a dropdown in the header. The last user you picked is remembered in
 `localStorage`.
+
+## Food lookup (Supabase Edge Function)
+
+The food log calls Claude server-side via a Supabase Edge Function
+(`supabase/functions/food-lookup`), so the Anthropic API key never reaches
+the browser. This needs a one-time deploy:
+
+1. Install the Supabase CLI and log in:
+
+   ```
+   npm install -g supabase
+   supabase login
+   ```
+
+2. Link this repo to your Supabase project (find the project ref in the
+   dashboard URL: `supabase.com/dashboard/project/<ref>`):
+
+   ```
+   supabase link --project-ref <your-project-ref>
+   ```
+
+3. Set your Anthropic API key as a function secret (from
+   console.anthropic.com — this is a real secret, never commit it):
+
+   ```
+   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+   ```
+
+4. Deploy the function:
+
+   ```
+   supabase functions deploy food-lookup
+   ```
+
+After that, the app's food log will call it automatically via
+`supabase.functions.invoke('food-lookup', ...)` using the same publishable
+key already in `.env`. Re-run step 4 any time `supabase/functions/food-lookup/index.ts`
+changes.
 
 ## Data model
 
@@ -90,6 +133,13 @@ Vitals are stored one `entries` row per user per calendar day
 `data`. Saving a day that already has an entry updates it in place rather
 than creating duplicates.
 
+Medications are one `entries` row per user/day/slot (`entry_type =
+'medication'`, `data.slot` is `AM`/`PM`/`Bedtime`); `logged_at` is the
+actual time taken, editable for backfilling. Food entries
+(`entry_type = 'food'`) store the typed description plus the full nutrition
+estimate (per-component breakdown, total, confidence, source note) — one
+row per logged item, not per day, since a day can have several.
+
 **RLS note:** Row Level Security is on for all three tables with a
 temporary "allow all" policy. That's a placeholder to satisfy Supabase,
 not real access control — before this is used for anything sensitive,
@@ -100,16 +150,23 @@ add real auth and tighten the policies to check `auth.uid()`.
 ```
 src/
   lib/
-    supabase.ts    Supabase client, reads env vars
-    types.ts       Shared TS types (HudsonUser, EntryRow, VitalsData)
-    dateUtils.ts   Calendar-day helpers (YYYY-MM-DD keys)
-    users.ts       fetchUsers()
-    vitals.ts      fetchVitalsForDate() / saveVitals() (upsert-by-day)
+    supabase.ts     Supabase client, reads env vars
+    types.ts        Shared TS types (HudsonUser, EntryRow, Vitals/Medication/FoodData)
+    dateUtils.ts    Calendar-day + time helpers
+    users.ts        fetchUsers()
+    vitals.ts       fetchVitalsForDate() / saveVitals() (upsert-by-day)
+    medications.ts  fetchMedicationsForDate() / markTaken() / markUntaken() / updateTakenTime()
+    food.ts         lookupNutrition() (calls the Edge Function) / fetchFoodForDate() / logFood() / deleteFoodEntry()
   components/
     UserSwitcher.tsx
     DateNav.tsx
     VitalsForm.tsx
-  App.tsx          Wires user + date state to the vitals form
+    MedicationTracker.tsx
+    FoodLog.tsx
+  App.tsx           Wires user + date state to each tracker
+supabase/
+  functions/
+    food-lookup/    Edge Function: calls Claude (+ web search) for nutrition estimates
 ```
 
 ## Migrating old artifact data

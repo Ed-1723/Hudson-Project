@@ -261,6 +261,152 @@ body {
   color: var(--muted);
 }
 
+.food-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.food-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.food-lookup-btn {
+  padding: 0 16px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.food-lookup-btn:disabled {
+  opacity: 0.7;
+}
+
+.food-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.food-items-list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}
+
+.food-preview-total {
+  margin-bottom: 6px;
+}
+
+.food-preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.food-source-note {
+  font-size: 0.8rem;
+}
+
+.food-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.food-preview-actions .save-btn {
+  width: auto;
+  flex: 1;
+  padding: 10px;
+}
+
+.food-discard-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.food-day-total {
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.food-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.food-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.food-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+}
+
+.food-item-name {
+  font-weight: 500;
+}
+
+.food-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.confidence-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--border);
+}
+
+.confidence-high {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.confidence-medium {
+  color: var(--muted);
+}
+
+.confidence-low {
+  color: var(--error);
+  border-color: var(--error);
+}
+
 .error-text {
   color: var(--error);
   font-size: 0.9rem;

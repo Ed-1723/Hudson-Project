@@ -36,3 +36,31 @@ export interface MedicationData {
 }
 
 export type MedicationEntry = EntryRow<MedicationData>
+
+export interface NutritionTotals {
+  calories: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+  sodium_mg: number
+}
+
+export interface NutritionItem extends NutritionTotals {
+  name: string
+}
+
+export type NutritionConfidence = 'high' | 'medium' | 'low'
+
+export interface NutritionEstimate {
+  items: NutritionItem[]
+  total: NutritionTotals
+  confidence: NutritionConfidence
+  source_note: string
+}
+
+export interface FoodData extends NutritionEstimate {
+  date: string // YYYY-MM-DD, the calendar day this food belongs to
+  description: string // what the user typed in
+}
+
+export type FoodEntry = EntryRow<FoodData>

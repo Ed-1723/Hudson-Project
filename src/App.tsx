@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DateNav } from './components/DateNav'
+import { FoodLog } from './components/FoodLog'
 import { MedicationTracker } from './components/MedicationTracker'
 import { UserSwitcher } from './components/UserSwitcher'
 import { VitalsForm } from './components/VitalsForm'
@@ -66,6 +67,9 @@ function App() {
 
         <h2 className="section-title">Vitals</h2>
         <VitalsForm userId={currentUserId} dateKey={dateKey} />
+
+        <h2 className="section-title">Food</h2>
+        <FoodLog userId={currentUserId} dateKey={dateKey} />
       </main>
     </div>
   )
