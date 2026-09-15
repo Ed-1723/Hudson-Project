@@ -1,7 +1,8 @@
-// Supabase Edge Function: looks up nutrition estimates for a free-text food
-// description using Claude, with web search for branded/restaurant items.
-// The Anthropic API key lives only in this function's environment (set via
-// `supabase secrets set`) and never reaches the browser.
+// Supabase Edge Function: looks up nutrition estimates for a food, either
+// from a free-text description (with web search for branded/restaurant
+// items) or a photo of a nutrition label. The Anthropic API key lives only
+// in this function's environment (set via `supabase secrets set`) and
+// never reaches the browser.
 
 import Anthropic from 'npm:@anthropic-ai/sdk@0.70.0'
 
@@ -14,21 +15,29 @@ const corsHeaders = {
 const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
 
 const SYSTEM_PROMPT = `You are a nutrition estimation assistant for a personal health tracker.
-The user describes a food or drink they consumed, sometimes with several
-components (e.g. "chicken burrito bowl with rice, beans, and guac").
 
-For each described component, estimate calories, protein (g), carbohydrates
-(g), fat (g), and sodium (mg), then sum the components into a total.
+The user logs food one of two ways:
 
-Use web search when the item is a specific restaurant or branded product
-whose nutrition facts are likely published online, or when you are not
-confident in a generic estimate. For generic or homemade foods, reasonable
-standard nutrition values are fine without searching.
+1. A free-text description, sometimes with several components (e.g.
+   "chicken burrito bowl with rice, beans, and guac"). For each component,
+   estimate calories, protein (g), carbohydrates (g), fat (g), and sodium
+   (mg), then sum them into a total. Use web search when the item is a
+   specific restaurant or branded product whose nutrition facts are likely
+   published online, or when you are not confident in a generic estimate.
+   For generic or homemade foods, reasonable standard nutrition values are
+   fine without searching.
+
+2. A photo of a nutrition facts label, optionally with a servings count and
+   a short note. Read the label's per-serving values exactly as printed and
+   multiply by the given servings count (default 1 if not stated). This
+   case does not need web search - the label is the source of truth. Set
+   confidence to "high" whenever the label is clearly legible.
 
 Always finish by calling submit_nutrition_estimate exactly once with your
 final answer, including a confidence level and a brief source_note
 explaining where the numbers came from (e.g. "Chipotle's published nutrition
-page" or "USDA generic estimate for cooked white rice").`
+page", "USDA generic estimate for cooked white rice", or "Nutrition label
+photo, 2 servings").`
 
 const NUTRITION_TOOL: Anthropic.Tool = {
   name: 'submit_nutrition_estimate',
@@ -80,18 +89,40 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  let description: unknown
+  let body: { description?: unknown; imageBase64?: unknown; imageMediaType?: unknown; servings?: unknown }
   try {
-    ;({ description } = await req.json())
+    body = await req.json()
   } catch {
     return jsonResponse({ error: 'Invalid JSON body' }, 400)
   }
 
-  if (typeof description !== 'string' || !description.trim()) {
-    return jsonResponse({ error: 'Missing "description" string in request body' }, 400)
+  const description = typeof body.description === 'string' ? body.description.trim() : ''
+  const imageBase64 = typeof body.imageBase64 === 'string' ? body.imageBase64 : null
+  const imageMediaType = typeof body.imageMediaType === 'string' ? body.imageMediaType : 'image/jpeg'
+  const servings = typeof body.servings === 'number' && body.servings > 0 ? body.servings : 1
+
+  if (!description && !imageBase64) {
+    return jsonResponse({ error: 'Provide a "description" and/or a label photo' }, 400)
   }
 
-  let messages: Anthropic.MessageParam[] = [{ role: 'user', content: description }]
+  // deno-lint-ignore no-explicit-any
+  const content: any[] = []
+  if (imageBase64) {
+    content.push({
+      type: 'image',
+      source: { type: 'base64', media_type: imageMediaType, data: imageBase64 },
+    })
+    content.push({
+      type: 'text',
+      text: description
+        ? `Nutrition label photo. Servings: ${servings}. Note: ${description}`
+        : `Nutrition label photo. Servings: ${servings}.`,
+    })
+  } else {
+    content.push({ type: 'text', text: description })
+  }
+
+  let messages: Anthropic.MessageParam[] = [{ role: 'user', content }]
 
   try {
     for (let turn = 0; turn < MAX_TURNS; turn++) {

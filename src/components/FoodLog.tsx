@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { deleteFoodEntry, fetchFoodForDate, logFood, lookupNutrition } from '../lib/food'
+import { fileToCompressedImage, type EncodedImage } from '../lib/image'
 import type { FoodEntry, NutritionEstimate, NutritionTotals } from '../lib/types'
 
 interface Props {
@@ -23,9 +24,12 @@ function sumTotals(entries: FoodEntry[]): NutritionTotals {
 export function FoodLog({ userId, dateKey }: Props) {
   const [entries, setEntries] = useState<FoodEntry[] | null>(null)
   const [description, setDescription] = useState('')
+  const [image, setImage] = useState<(EncodedImage & { previewUrl: string }) | null>(null)
+  const [servings, setServings] = useState(1)
   const [pending, setPending] = useState<NutritionEstimate | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -46,13 +50,36 @@ export function FoodLog({ userId, dateKey }: Props) {
     }
   }, [userId, dateKey])
 
+  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setError(null)
+    try {
+      const encoded = await fileToCompressedImage(file)
+      setImage({ ...encoded, previewUrl: URL.createObjectURL(file) })
+    } catch (err) {
+      setError((err as Error).message)
+    }
+  }
+
+  function clearImage() {
+    if (image) URL.revokeObjectURL(image.previewUrl)
+    setImage(null)
+    setServings(1)
+  }
+
   async function handleLookup() {
-    if (!description.trim()) return
+    if (!description.trim() && !image) return
     setLoading(true)
     setError(null)
     setPending(null)
     try {
-      const estimate = await lookupNutrition(description.trim())
+      const estimate = await lookupNutrition({
+        description: description.trim() || undefined,
+        image: image ?? undefined,
+        servings: image ? servings : undefined,
+      })
       setPending(estimate)
     } catch (err) {
       setError((err as Error).message)
@@ -65,10 +92,12 @@ export function FoodLog({ userId, dateKey }: Props) {
     if (!pending) return
     setError(null)
     try {
-      const created = await logFood(userId, dateKey, description.trim(), pending)
+      const label = description.trim() || pending.items[0]?.name || 'Food'
+      const created = await logFood(userId, dateKey, label, pending)
       setEntries((prev) => [...(prev ?? []), created])
       setPending(null)
       setDescription('')
+      clearImage()
     } catch (err) {
       setError((err as Error).message)
     }
@@ -92,17 +121,59 @@ export function FoodLog({ userId, dateKey }: Props) {
         <input
           type="text"
           className="food-input"
-          placeholder="What did you eat?"
+          placeholder={image ? 'Add a note (optional)' : 'What did you eat?'}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleLookup()
           }}
         />
-        <button type="button" className="food-lookup-btn" onClick={handleLookup} disabled={loading}>
+        <button
+          type="button"
+          className="food-photo-btn"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Attach a nutrition label photo"
+          title="Attach a nutrition label photo"
+        >
+          📷
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={handlePhotoSelected}
+        />
+        <button
+          type="button"
+          className="food-lookup-btn"
+          onClick={handleLookup}
+          disabled={loading || (!description.trim() && !image)}
+        >
           {loading ? '…' : 'Look up'}
         </button>
       </div>
+
+      {image && (
+        <div className="food-image-preview">
+          <img src={image.previewUrl} alt="Nutrition label" />
+          <label className="food-servings-label">
+            Servings
+            <input
+              type="number"
+              min="0.5"
+              step="0.5"
+              className="food-servings-input"
+              value={servings}
+              onChange={(e) => setServings(Number(e.target.value) || 1)}
+            />
+          </label>
+          <button type="button" className="food-image-remove" onClick={clearImage} aria-label="Remove photo">
+            ×
+          </button>
+        </div>
+      )}
 
       {error && <p className="error-text">{error}</p>}
 

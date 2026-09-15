@@ -1,14 +1,27 @@
+import type { EncodedImage } from './image'
 import { supabase } from './supabase'
 import type { FoodData, FoodEntry, NutritionEstimate } from './types'
 
 const ENTRY_TYPE = 'food'
 
-// Calls the food-lookup Edge Function, which asks Claude (with web search)
-// to estimate nutrition for a free-text description. The Anthropic key
-// never reaches the browser - it lives only in the Edge Function's secrets.
-export async function lookupNutrition(description: string): Promise<NutritionEstimate> {
+export interface LookupNutritionArgs {
+  description?: string
+  image?: EncodedImage
+  servings?: number
+}
+
+// Calls the food-lookup Edge Function, which asks Claude (with web search,
+// or by reading a nutrition label photo) to estimate nutrition. The
+// Anthropic key never reaches the browser - it lives only in the Edge
+// Function's secrets.
+export async function lookupNutrition(args: LookupNutritionArgs): Promise<NutritionEstimate> {
   const { data, error } = await supabase.functions.invoke('food-lookup', {
-    body: { description },
+    body: {
+      description: args.description,
+      imageBase64: args.image?.base64,
+      imageMediaType: args.image?.mediaType,
+      servings: args.servings,
+    },
   })
 
   if (error) throw error

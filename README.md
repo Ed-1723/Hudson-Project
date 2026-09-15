@@ -14,12 +14,16 @@ shared data layer, not a one-off.
 Ported so far, all reading from and writing to Supabase with per-day date
 navigation:
 
-- **Vitals** — steps, water, weight, blood pressure, pulse.
+- **Vitals** — steps, water, weight, blood pressure, pulse. Water also has
+  quick-add buttons (12/32/40 oz) that save immediately, for logging a
+  bottle refill without typing a running total.
 - **Medications** — AM/PM/Bedtime taps, with manual time correction for
   backfilling.
-- **Food log** — free-text description → Claude (with web search) estimates
-  calories/protein/carbs/fat/sodium, with a confidence level and source
-  note; compound entries sum their components.
+- **Food log** — either a free-text description (Claude + web search
+  estimates calories/protein/carbs/fat/sodium) or a nutrition label photo
+  (Claude reads the label's per-serving values directly, scaled by a
+  servings count you enter) — both return a confidence level and source
+  note, and compound entries sum their components.
 
 Not yet ported: favorites, the daily readout view, exports (doctor report /
 backup JSON), and the multi-user household scorecard.
@@ -93,7 +97,11 @@ the browser. This needs a one-time deploy:
 After that, the app's food log will call it automatically via
 `supabase.functions.invoke('food-lookup', ...)` using the same publishable
 key already in `.env`. Re-run step 4 any time `supabase/functions/food-lookup/index.ts`
-changes.
+changes (e.g. after pulling an update to it) — just:
+
+```
+supabase functions deploy food-lookup
+```
 
 ## Data model
 
