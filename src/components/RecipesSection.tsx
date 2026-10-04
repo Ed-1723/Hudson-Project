@@ -6,6 +6,7 @@ import type { NutritionEstimate, RecipeWithIngredients } from '../lib/types'
 interface Props {
   userId: string
   dateKey: string
+  onLogged?: () => void
 }
 
 interface IngredientRow extends IngredientInput {
@@ -17,7 +18,7 @@ function emptyRow(): IngredientRow {
   return { key: nextRowKey++, name: '', quantity: null, unit: null }
 }
 
-export function RecipesSection({ userId, dateKey }: Props) {
+export function RecipesSection({ userId, dateKey, onLogged }: Props) {
   const [recipes, setRecipes] = useState<RecipeWithIngredients[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loggedId, setLoggedId] = useState<string | null>(null)
@@ -105,6 +106,7 @@ export function RecipesSection({ userId, dateKey }: Props) {
     try {
       await logFood(userId, dateKey, recipe.name, estimate)
       setLoggedId(recipe.id)
+      onLogged?.()
       setTimeout(() => setLoggedId((id) => (id === recipe.id ? null : id)), 1500)
     } catch (err) {
       setError((err as Error).message)

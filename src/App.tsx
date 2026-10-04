@@ -16,6 +16,7 @@ function App() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [dateKey, setDateKey] = useState(todayKey())
+  const [foodRefreshKey, setFoodRefreshKey] = useState(0)
 
   useEffect(() => {
     fetchUsers()
@@ -70,10 +71,14 @@ function App() {
         <VitalsForm userId={currentUserId} dateKey={dateKey} />
 
         <h2 className="section-title">Food</h2>
-        <FoodLog userId={currentUserId} dateKey={dateKey} />
+        <FoodLog key={foodRefreshKey} userId={currentUserId} dateKey={dateKey} />
 
         <h2 className="section-title">Recipes</h2>
-        <RecipesSection userId={currentUserId} dateKey={dateKey} />
+        <RecipesSection
+          userId={currentUserId}
+          dateKey={dateKey}
+          onLogged={() => setFoodRefreshKey((k) => k + 1)}
+        />
       </main>
     </div>
   )
