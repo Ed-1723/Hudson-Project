@@ -64,3 +64,33 @@ export interface FoodData extends NutritionEstimate {
 }
 
 export type FoodEntry = EntryRow<FoodData>
+
+export interface RecipeIngredient {
+  id: string
+  recipe_id: string
+  name: string
+  quantity: number | null
+  unit: string | null
+  notes: string | null
+  order_index: number
+}
+
+export interface Recipe {
+  id: string
+  name: string
+  instructions: string | null
+  servings: number | null
+  // Cached per-serving nutrition, computed once via Claude when the recipe
+  // is created so logging it later is instant.
+  calories: number | null
+  protein_g: number | null
+  carbs_g: number | null
+  fat_g: number | null
+  sodium_mg: number | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface RecipeWithIngredients extends Recipe {
+  recipe_ingredients: RecipeIngredient[]
+}

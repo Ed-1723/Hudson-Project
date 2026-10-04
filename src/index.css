@@ -487,6 +487,119 @@ body {
   border-color: var(--error);
 }
 
+.recipe-new-btn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 16px;
+}
+
+.recipe-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recipe-servings-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.recipe-ingredients-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recipe-ingredient-row {
+  display: grid;
+  grid-template-columns: 50px 70px 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.recipe-ingredient-row input {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.recipe-add-row-btn {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.recipe-instructions-input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recipe-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.recipe-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.recipe-macro-line {
+  font-size: 0.8rem;
+  margin: 0 0 6px;
+}
+
+.recipe-instructions-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+  margin: 6px 0;
+}
+
+.recipe-log-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .error-text {
   color: var(--error);
   font-size: 0.9rem;
