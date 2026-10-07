@@ -69,7 +69,10 @@ export interface RecipeIngredient {
   id: string
   recipe_id: string
   name: string
-  quantity: number | null
+  // Free text, not numeric -- recipes legitimately use fractions ("1/3
+  // cup") and imprecise amounts ("a pinch") that a number field can't
+  // hold, and nothing in the app does math with this value.
+  quantity: string | null
   unit: string | null
   notes: string | null
   order_index: number

@@ -153,7 +153,7 @@ export function RecipesSection({ userId, dateKey, onLogged }: Props) {
                   placeholder="Qty"
                   className="recipe-qty-input"
                   value={row.quantity ?? ''}
-                  onChange={(e) => updateRow(row.key, { quantity: e.target.value === '' ? null : Number(e.target.value) })}
+                  onChange={(e) => updateRow(row.key, { quantity: e.target.value || null })}
                 />
                 <input
                   type="text"

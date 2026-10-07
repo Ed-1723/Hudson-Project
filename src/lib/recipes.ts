@@ -4,7 +4,7 @@ import type { NutritionTotals, RecipeWithIngredients } from './types'
 
 export interface IngredientInput {
   name: string
-  quantity: number | null
+  quantity: string | null
   unit: string | null
 }
 
