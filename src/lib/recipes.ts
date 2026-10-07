@@ -1,6 +1,6 @@
-import { lookupNutrition } from './food'
+import { lookupIngredientLines } from './food'
 import { supabase } from './supabase'
-import type { NutritionTotals, RecipeWithIngredients } from './types'
+import type { IngredientNutritionLine, NutritionTotals, RecipeWithIngredients } from './types'
 
 export interface IngredientInput {
   name: string
@@ -25,10 +25,9 @@ export async function createRecipe(
   instructions: string,
   ingredients: IngredientInput[],
 ): Promise<RecipeWithIngredients> {
-  const estimate = await lookupNutrition({
-    description: buildRecipeDescription(name, ingredients, servings),
-  })
-  const perServing = divideByServings(estimate.total, servings)
+  const lines = await lookupIngredientLines(ingredients.map(describeIngredient))
+  const wholeRecipeTotal = sumLines(lines)
+  const perServing = divideByServings(wholeRecipeTotal, servings)
 
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes')
@@ -37,6 +36,7 @@ export async function createRecipe(
       servings,
       instructions: instructions || null,
       created_by: userId,
+      nutrition_lines: lines,
       ...perServing,
     })
     .select('*')
@@ -74,11 +74,24 @@ export async function deleteRecipe(recipeId: string): Promise<void> {
   if (error) throw error
 }
 
-function buildRecipeDescription(name: string, ingredients: IngredientInput[], servings: number): string {
-  const ingredientList = ingredients
-    .map((i) => [i.quantity, i.unit, i.name].filter(Boolean).join(' '))
-    .join(', ')
-  return `Recipe: ${name}. Ingredients: ${ingredientList}. Makes ${servings} serving${servings === 1 ? '' : 's'} total.`
+function describeIngredient(ing: IngredientInput): string {
+  return [ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')
+}
+
+// Only matched lines contribute real numbers; an unmatched line's fields
+// are already 0 from the Edge Function, so summing everything is safe and
+// keeps the total consistent with what's displayed per line.
+function sumLines(lines: IngredientNutritionLine[]): NutritionTotals {
+  return lines.reduce(
+    (sum, line) => ({
+      calories: sum.calories + line.calories,
+      protein_g: sum.protein_g + line.protein_g,
+      carbs_g: sum.carbs_g + line.carbs_g,
+      fat_g: sum.fat_g + line.fat_g,
+      sodium_mg: sum.sodium_mg + line.sodium_mg,
+    }),
+    { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, sodium_mg: 0 },
+  )
 }
 
 function divideByServings(total: NutritionTotals, servings: number): NutritionTotals {

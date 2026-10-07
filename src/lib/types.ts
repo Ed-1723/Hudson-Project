@@ -78,6 +78,19 @@ export interface RecipeIngredient {
   order_index: number
 }
 
+export interface IngredientNutritionLine {
+  input: string
+  matched: boolean
+  matched_food: string
+  quantity_understood: string
+  calories: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+  sodium_mg: number
+  note: string
+}
+
 export interface Recipe {
   id: string
   name: string
@@ -90,6 +103,11 @@ export interface Recipe {
   carbs_g: number | null
   fat_g: number | null
   sodium_mg: number | null
+  // Per-ingredient breakdown from the lookup that produced the totals above
+  // (whole-recipe quantities, not per-serving) -- kept so a flagged/
+  // unmatched ingredient is visible instead of silently folded into a
+  // confident-looking total.
+  nutrition_lines: IngredientNutritionLine[] | null
   created_by: string | null
   created_at: string
 }

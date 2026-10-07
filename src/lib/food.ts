@@ -1,6 +1,6 @@
 import type { EncodedImage } from './image'
 import { supabase } from './supabase'
-import type { FoodData, FoodEntry, NutritionEstimate } from './types'
+import type { FoodData, FoodEntry, IngredientNutritionLine, NutritionEstimate } from './types'
 
 const ENTRY_TYPE = 'food'
 
@@ -27,6 +27,20 @@ export async function lookupNutrition(args: LookupNutritionArgs): Promise<Nutrit
   if (error) throw error
   if (data?.error) throw new Error(data.error)
   return data as NutritionEstimate
+}
+
+// Asks Claude for a nutrition estimate per ingredient line, one entry
+// guaranteed per line given (never silently dropped) -- used by the recipe
+// builder instead of the single free-text lookup above, since a recipe
+// needs every ingredient accounted for rather than one blended estimate.
+export async function lookupIngredientLines(lines: string[]): Promise<IngredientNutritionLine[]> {
+  const { data, error } = await supabase.functions.invoke('food-lookup', {
+    body: { ingredientLines: lines },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return (data.lines ?? []) as IngredientNutritionLine[]
 }
 
 export async function fetchFoodForDate(userId: string, date: string): Promise<FoodEntry[]> {

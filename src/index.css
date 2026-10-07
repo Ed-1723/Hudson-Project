@@ -588,6 +588,20 @@ body {
   margin: 6px 0;
 }
 
+.recipe-unmatched-banner {
+  font-size: 0.8rem;
+  color: var(--error);
+  margin: 0 0 6px;
+}
+
+.recipe-unmatched-note {
+  color: var(--error);
+}
+
+.recipe-ingredient-breakdown li {
+  margin-bottom: 2px;
+}
+
 .recipe-log-btn {
   margin-top: 8px;
   width: 100%;

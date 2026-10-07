@@ -235,16 +235,37 @@ export function RecipesSection({ userId, dateKey, onLogged }: Props) {
                 {recipe.servings} serving{recipe.servings === 1 ? '' : 's'}
               </p>
 
+              {recipe.nutrition_lines?.some((l) => !l.matched) && (
+                <p className="recipe-unmatched-banner">
+                  ⚠ {recipe.nutrition_lines.filter((l) => !l.matched).length} ingredient
+                  {recipe.nutrition_lines.filter((l) => !l.matched).length === 1 ? '' : 's'} could not be
+                  estimated — totals above don't include them.
+                </p>
+              )}
+
               {recipe.recipe_ingredients.length > 0 && (
-                <ul className="food-items-list">
+                <ul className="food-items-list recipe-ingredient-breakdown">
                   {recipe.recipe_ingredients
                     .slice()
                     .sort((a, b) => a.order_index - b.order_index)
-                    .map((ing) => (
-                      <li key={ing.id}>
-                        {[ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')}
-                      </li>
-                    ))}
+                    .map((ing, i) => {
+                      const line = recipe.nutrition_lines?.[i]
+                      return (
+                        <li key={ing.id}>
+                          {[ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')}
+                          {line &&
+                            (line.matched ? (
+                              <span className="muted">
+                                {' '}
+                                — {line.matched_food} ({line.quantity_understood}):{' '}
+                                {Math.round(line.calories)} cal, {Math.round(line.protein_g)}g protein
+                              </span>
+                            ) : (
+                              <span className="recipe-unmatched-note"> — not estimated: {line.note}</span>
+                            ))}
+                        </li>
+                      )
+                    })}
                 </ul>
               )}
 
