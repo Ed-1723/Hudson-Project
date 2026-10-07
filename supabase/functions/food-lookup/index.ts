@@ -249,6 +249,60 @@ Deno.serve(async (req) => {
   return jsonResponse({ error: 'Could not produce a nutrition estimate for that description' }, 502)
 })
 
+interface RawLine {
+  input?: unknown
+  matched?: unknown
+  matched_food?: unknown
+  quantity_understood?: unknown
+  calories?: unknown
+  protein_g?: unknown
+  carbs_g?: unknown
+  fat_g?: unknown
+  sodium_mg?: unknown
+  note?: unknown
+}
+
+// Guarantees exactly one output line per input line, in order. The model is
+// instructed to do this itself, but a response can still come back short
+// (truncated by max_tokens on a large recipe, or a line dropped despite
+// instructions) - the caller must never silently receive fewer lines than
+// it submitted, so any gap is filled with an explicit "no estimate
+// returned" flag rather than quietly vanishing into a confident-looking
+// total of zero.
+function reconcileLines(inputLines: string[], rawLines: unknown) {
+  const raw = Array.isArray(rawLines) ? (rawLines as RawLine[]) : []
+
+  return inputLines.map((input, i) => {
+    const r = raw[i]
+    if (r && typeof r === 'object') {
+      return {
+        input,
+        matched: Boolean(r.matched),
+        matched_food: typeof r.matched_food === 'string' ? r.matched_food : '',
+        quantity_understood: typeof r.quantity_understood === 'string' ? r.quantity_understood : '',
+        calories: typeof r.calories === 'number' ? r.calories : 0,
+        protein_g: typeof r.protein_g === 'number' ? r.protein_g : 0,
+        carbs_g: typeof r.carbs_g === 'number' ? r.carbs_g : 0,
+        fat_g: typeof r.fat_g === 'number' ? r.fat_g : 0,
+        sodium_mg: typeof r.sodium_mg === 'number' ? r.sodium_mg : 0,
+        note: typeof r.note === 'string' ? r.note : '',
+      }
+    }
+    return {
+      input,
+      matched: false,
+      matched_food: '',
+      quantity_understood: '',
+      calories: 0,
+      protein_g: 0,
+      carbs_g: 0,
+      fat_g: 0,
+      sodium_mg: 0,
+      note: 'No estimate returned for this ingredient (the response may have been incomplete) - try saving again.',
+    }
+  })
+}
+
 async function handleIngredientLines(ingredientLines: string[]): Promise<Response> {
   const numbered = ingredientLines.map((line, i) => `${i + 1}. ${line}`).join('\n')
   let messages: Anthropic.MessageParam[] = [{ role: 'user', content: numbered }]
@@ -257,9 +311,9 @@ async function handleIngredientLines(ingredientLines: string[]): Promise<Respons
     for (let turn = 0; turn < MAX_TURNS; turn++) {
       const response = await client.messages.create({
         model: 'claude-sonnet-5',
-        max_tokens: 4096,
+        max_tokens: 16000,
         system: INGREDIENT_LINES_SYSTEM_PROMPT,
-        tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 5 }, INGREDIENT_LINES_TOOL],
+        tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 10 }, INGREDIENT_LINES_TOOL],
         messages,
       })
 
@@ -273,7 +327,8 @@ async function handleIngredientLines(ingredientLines: string[]): Promise<Respons
       )
 
       if (submitBlock) {
-        return jsonResponse(submitBlock.input)
+        const input = submitBlock.input as { lines?: unknown }
+        return jsonResponse({ lines: reconcileLines(ingredientLines, input.lines) })
       }
 
       break
